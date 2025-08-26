@@ -2,9 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
   // Enable CORS
   app.enableCors({
@@ -19,15 +21,38 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
   
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  }));
+
+  // Serve uploaded files statically at /uploads
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   const config = new DocumentBuilder()
-    .setTitle('Homeon Auth API')
-    .setDescription('Simple admin authentication API')
+    .setTitle('Homeon Real Estate API')
+    .setDescription('Comprehensive API for managing real estate projects, properties, and listings. Includes authentication, project management, and media uploads.')
     .setVersion('1.0')
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('projects', 'Real estate project management')
+    .addBearerAuth()
     .build();
+    
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showRequestHeaders: true,
+      showExtensions: true,
+    },
+    customSiteTitle: 'Homeon API Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+  });
 
   await app.listen(3002);
 }
