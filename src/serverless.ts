@@ -9,12 +9,10 @@ export async function createNestServer() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://192.168.1.61:3000',
-      'http://192.168.1.61:3001',
-    ],
+    origin: (origin, callback) => {
+      // Allow all origins, including undefined (e.g., same-origin requests)
+      callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -60,5 +58,3 @@ export async function createNestServer() {
 }
 
 export default createNestServer;
-
-

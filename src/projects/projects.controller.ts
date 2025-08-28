@@ -145,6 +145,29 @@ export class ProjectsController {
     return this.service.findOne(+id);
   }
 
+  @Get('search/query')
+  @ApiOperation({ summary: 'Search projects with filters' })
+  search(@Body() _unused: any) {
+    // Not used; GET with query params read in service via request injection isn't set up.
+    // Keep method signature minimal; frontend will call the below POST for flexibility.
+    return this.service.findAll();
+  }
+
+  @Post('search')
+  @ApiOperation({ summary: 'Search projects (POST with JSON filters)' })
+  searchPost(@Body() filters: any) {
+    return this.service.search({
+      city: filters.city,
+      location: filters.location,
+      propertyType: filters.propertyType,
+      bedrooms: filters.bedrooms,
+      minPrice: typeof filters.minPrice === 'number' ? filters.minPrice : undefined,
+      maxPrice: typeof filters.maxPrice === 'number' ? filters.maxPrice : undefined,
+      minArea: typeof filters.minArea === 'number' ? filters.minArea : undefined,
+      maxArea: typeof filters.maxArea === 'number' ? filters.maxArea : undefined,
+    });
+  }
+
   @Put(':id')
   @ApiOperation({ 
     summary: 'Update project',
