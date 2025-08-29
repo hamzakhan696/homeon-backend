@@ -99,7 +99,39 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 # Enhanced ProjectsTab Component
 
-A comprehensive React component for managing real estate projects with advanced form handling, file uploads, and API integration.
+## Email Configuration
+
+To enable email functionality for booking notifications, you need to configure SMTP settings in your `.env` file:
+
+```bash
+# Email Configuration (for Gmail)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+
+# Booking Email Recipient
+BOOKINGS_EMAIL_TO=salam@homeon.pk
+```
+
+### Gmail Setup Instructions:
+
+1. **Enable 2-Factor Authentication** on your Gmail account
+2. **Generate App Password**:
+   - Go to Google Account settings
+   - Security → 2-Step Verification → App passwords
+   - Generate a new app password for "Mail"
+   - Use this password in `SMTP_PASS`
+
+### Alternative Email Providers:
+
+- **SendGrid**: Use `smtp.sendgrid.net` as host
+- **Outlook/Hotmail**: Use `smtp-mail.outlook.com` as host
+- **Custom SMTP**: Configure your own SMTP server details
+
+### Testing Email:
+
+After configuration, test by creating a booking through the frontend. Check your console logs for email status and verify emails are received at `salam@homeon.pk`.
 
 ## Features
 

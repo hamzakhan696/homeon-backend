@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectsModule } from './projects/projects.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BookingsModule } from './bookings/bookings.module';
     ProjectsModule,
     BlogsModule,
     BookingsModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

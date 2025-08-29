@@ -2,31 +2,29 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BookingsService {
   constructor(
     @InjectRepository(Booking)
     private repo: Repository<Booking>,
+    private emailService: EmailService,
   ) {}
 
   async create(data: Partial<Booking>) {
     const booking = this.repo.create(data);
     const saved = await this.repo.save(booking);
-    // Fire-and-forget email (log-based placeholder). Integrate real mailer if configured.
+    
+    // Send email notification
     try {
-      await this.sendEmail(saved);
-    } catch (e) {
-      // swallow email errors
+      await this.emailService.sendBookingEmail(saved);
+    } catch (error) {
+      console.error('Failed to send booking email:', error);
+      // Don't fail the booking creation if email fails
     }
+    
     return saved;
-  }
-
-  private async sendEmail(b: Booking): Promise<void> {
-    const to = process.env.BOOKINGS_EMAIL_TO || 'salam@homeon.pk';
-    // If you add Nest Mailer later, plug it here. For now, write to console.
-    // eslint-disable-next-line no-console
-    console.log(`[BOOKING EMAIL] -> ${to}: New booking #${b.id} by ${b.fullName} for project ${b.projectTitle}`);
   }
 
   findAll() {

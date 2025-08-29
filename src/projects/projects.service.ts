@@ -88,17 +88,28 @@ export class ProjectsService {
     minArea?: number;
     maxArea?: number;
   }) {
+    console.log('[SEARCH DEBUG] Received filters:', filters);
+    
     const qb = this.projectRepo.createQueryBuilder('p');
     if (filters.city) qb.andWhere('p.city LIKE :city', { city: `%${filters.city}%` });
     if (filters.location) qb.andWhere('p.location LIKE :location', { location: `%${filters.location}%` });
-    if (filters.propertyType) qb.andWhere('p.propertyType = :ptype', { ptype: filters.propertyType });
+    // Handle property type filter - only apply if it's not empty
+    if (filters.propertyType && filters.propertyType.trim()) {
+      qb.andWhere('p.propertyType = :ptype', { ptype: filters.propertyType.trim() });
+    }
     if (filters.bedrooms && filters.bedrooms !== 'All') qb.andWhere('p.bedrooms = :bed', { bed: String(filters.bedrooms) });
     if (typeof filters.minPrice === 'number') qb.andWhere('p.price >= :minPrice', { minPrice: filters.minPrice });
     if (typeof filters.maxPrice === 'number') qb.andWhere('p.price <= :maxPrice', { maxPrice: filters.maxPrice });
     if (typeof filters.minArea === 'number') qb.andWhere('p.areaSize >= :minArea', { minArea: filters.minArea });
     if (typeof filters.maxArea === 'number') qb.andWhere('p.areaSize <= :maxArea', { maxArea: filters.maxArea });
     qb.orderBy('p.createdAt', 'DESC');
+    
+    const query = qb.getQuery();
+    console.log('[SEARCH DEBUG] Generated SQL query:', query);
+    
     const items = await qb.getMany();
+    console.log('[SEARCH DEBUG] Found items:', items.length);
+    
     return items.map((p) => ({
       ...p,
       projectImages: this.normalizeMediaArray(p.projectImages),
