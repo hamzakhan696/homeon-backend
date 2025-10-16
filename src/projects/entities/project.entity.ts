@@ -1,5 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+export enum ProjectStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 export enum PropertyType {
   HOME = 'home',
   PLOTS = 'plots',
@@ -136,6 +142,9 @@ export class Project {
 
   @Column({ nullable: true })
   coverImage: string;
+
+  @Column({ type: 'enum', enum: ProjectStatus, default: ProjectStatus.PENDING })
+  status: ProjectStatus;
 
   @CreateDateColumn()
   createdAt: Date;

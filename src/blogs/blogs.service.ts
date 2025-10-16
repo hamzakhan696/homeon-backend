@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './entities/blog.entity';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 
@@ -10,32 +11,45 @@ export class BlogsService {
   constructor(
     @InjectRepository(Blog)
     private blogRepo: Repository<Blog>,
+    private readonly cloudinary: CloudinaryService,
   ) {}
 
   create(dto: CreateBlogDto) {
-    const blog = this.blogRepo.create(dto);
+    // Ensure descriptions array is properly handled
+    const blogData = {
+      ...dto,
+      descriptions: dto.descriptions || (dto.description ? [dto.description] : null)
+    };
+    const blog = this.blogRepo.create(blogData);
     return this.blogRepo.save(blog);
   }
 
   async createWithUploads(dto: CreateBlogDto, localFiles: any[]) {
-    const images = (localFiles || [])
-      .filter((f: any) => f.mimetype?.startsWith('image/'))
-      .map((f: any) => `data:${f.mimetype};base64,${Buffer.from(f.buffer).toString('base64')}`);
+    const files = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('image/'));
+    const uploads = await Promise.all(
+      files.map((f: any) =>
+        this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+          folder: 'homeon/blogs/images',
+          resource_type: 'image',
+        }),
+      ),
+    );
 
-    let featuredImage: string | undefined;
-    const regularImages: string[] = [];
+    const urls = uploads.map((u) => u.secure_url);
+    const featuredImage = urls[0] || null;
+    const regularImages = urls.length > 1 ? urls.slice(1) : null;
 
-    // If client marks first file as featured or sends a separate field, we will
-    // treat first as featured for now; frontend will send featured first.
-    if (images.length > 0) {
-      featuredImage = images[0];
-      if (images.length > 1) regularImages.push(...images.slice(1));
+    // Handle descriptions from multipart form data
+    let descriptions = dto.descriptions;
+    if (!descriptions && dto.description) {
+      descriptions = [dto.description];
     }
 
     const blog = this.blogRepo.create({
       ...dto,
-      featuredImage: featuredImage || null,
-      images: regularImages.length ? regularImages : null,
+      featuredImage,
+      images: regularImages,
+      descriptions: descriptions
     });
 
     return this.blogRepo.save(blog);
@@ -52,7 +66,14 @@ export class BlogsService {
   async update(id: number, dto: UpdateBlogDto) {
     const blog = await this.blogRepo.findOneBy({ id });
     if (!blog) throw new NotFoundException('Blog not found');
-    Object.assign(blog, dto);
+    
+    // Handle descriptions properly
+    const updateData = {
+      ...dto,
+      descriptions: dto.descriptions || (dto.description ? [dto.description] : blog.descriptions)
+    };
+    
+    Object.assign(blog, updateData);
     return this.blogRepo.save(blog);
   }
 

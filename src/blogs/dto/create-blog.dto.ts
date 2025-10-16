@@ -17,6 +17,9 @@ export class CreateBlogDto {
   description?: string;
 
   @IsOptional()
+  descriptions?: string[];
+
+  @IsOptional()
   @IsString()
   tags?: string; // comma separated
 

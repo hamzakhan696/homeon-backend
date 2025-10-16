@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UploadedFiles, UseInterceptors, Patch, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -8,6 +8,31 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @ApiTags('projects')
+@Controller('projects')
+export class PublicProjectsController {
+  constructor(private readonly service: ProjectsService) {}
+
+  @Post()
+  submit(@Body() dto: CreateProjectDto) {
+    return this.service.create(dto);
+  }
+
+  @Post('create-with-media')
+  @ApiOperation({ summary: 'Public submit project with media (multipart)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('files', 30, {
+    limits: { fileSize: 50 * 1024 * 1024 },
+  }))
+  submitWithMedia(@Body() dto: CreateProjectDto, @UploadedFiles() files: any[]) {
+    return this.service.createWithUploads(dto, files);
+  }
+
+  @Get()
+  listApproved() {
+    return this.service.findAll('approved');
+  }
+}
+
 @Controller('admin/projects')
 export class ProjectsController {
   constructor(private readonly service: ProjectsService) {}
@@ -118,8 +143,19 @@ export class ProjectsController {
     description: 'Projects retrieved successfully',
     type: [CreateProjectDto]
   })
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('status') status?: string) {
+    return this.service.findAll(status);
+  }
+  @Patch(':id/approve')
+  @ApiOperation({ summary: 'Approve a pending project' })
+  approve(@Param('id') id: string) {
+    return this.service.setStatus(+id, 'approved');
+  }
+
+  @Patch(':id/reject')
+  @ApiOperation({ summary: 'Reject a pending project' })
+  reject(@Param('id') id: string) {
+    return this.service.setStatus(+id, 'rejected');
   }
 
   @Get(':id')

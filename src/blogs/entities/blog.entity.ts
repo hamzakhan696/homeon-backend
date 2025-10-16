@@ -17,6 +17,10 @@ export class Blog {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  // Store multiple descriptions as JSON array
+  @Column({ type: 'simple-json', nullable: true })
+  descriptions: string[] | null;
+
   @Column({ type: 'text', nullable: true })
   tags: string | null; // comma-separated for simplicity
 

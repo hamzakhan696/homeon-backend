@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { EmailService } from '../email/email.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
 
 @Injectable()
 export class BookingsService {
@@ -12,8 +13,15 @@ export class BookingsService {
     private emailService: EmailService,
   ) {}
 
-  async create(data: Partial<Booking>) {
-    const booking = this.repo.create(data);
+  async create(createBookingDto: CreateBookingDto) {
+    // Convert date strings to Date objects if provided
+    const bookingData: Partial<Booking> = {
+      ...createBookingDto,
+      dateOfBirth: createBookingDto.dateOfBirth ? new Date(createBookingDto.dateOfBirth) : undefined,
+      nomineeDateOfBirth: createBookingDto.nomineeDateOfBirth ? new Date(createBookingDto.nomineeDateOfBirth) : undefined,
+    };
+
+    const booking = this.repo.create(bookingData);
     const saved = await this.repo.save(booking);
     
     // Send email notification

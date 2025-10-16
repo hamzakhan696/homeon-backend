@@ -2,16 +2,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Project } from './entities/project.entity';
+import { Project, ProjectStatus } from './entities/project.entity';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Buffer } from 'buffer';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectRepository(Project)
     private projectRepo: Repository<Project>,
+    private readonly cloudinary: CloudinaryService,
   ) {}
 
   async create(dto: CreateProjectDto) {
@@ -20,20 +22,38 @@ export class ProjectsService {
   }
 
   async createWithUploads(dto: CreateProjectDto, localFiles: any[]) {
-    // Convert images to base64
-    const images = (localFiles || [])
-      .filter((f: any) => f.mimetype?.startsWith('image/'))
-      .map((f: any) => Buffer.from(f.buffer).toString('base64'));
+    const images = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('image/'));
+    const videos = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('video/'));
 
-    // Convert videos to base64 (optional, due to size constraints)
-    const videos = (localFiles || [])
-      .filter((f: any) => f.mimetype?.startsWith('video/'))
-      .map((f: any) => Buffer.from(f.buffer).toString('base64'));
+    const [imageResults, videoResults] = await Promise.all([
+      Promise.all(
+        images.map((f: any) =>
+          this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+            folder: 'homeon/projects/images',
+            resource_type: 'image',
+          }),
+        ),
+      ),
+      Promise.all(
+        videos.map((f: any) =>
+          this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+            folder: 'homeon/projects/videos',
+            resource_type: 'video',
+          }),
+        ),
+      ),
+    ]);
 
     const project = this.projectRepo.create({
       ...dto,
-      projectImages: [...(dto.projectImages || []), ...images.map((img) => `data:image/jpeg;base64,${img}`)],
-      projectVideos: [...(dto.projectVideos || []), ...videos.map((vid) => `data:video/mp4;base64,${vid}`)],
+      projectImages: [
+        ...(dto.projectImages || []),
+        ...imageResults.map((r) => r.secure_url),
+      ],
+      projectVideos: [
+        ...(dto.projectVideos || []),
+        ...videoResults.map((r) => r.secure_url),
+      ],
     });
 
     return this.projectRepo.save(project);
@@ -57,8 +77,9 @@ export class ProjectsService {
     return result;
   }
 
-  async findAll() {
-    const items = await this.projectRepo.find();
+  async findAll(status?: string) {
+    const where = status ? { status: status as ProjectStatus } : {} as any;
+    const items = await this.projectRepo.find({ where });
     return items.map((p) => ({
       ...p,
       projectImages: this.normalizeMediaArray(p.projectImages),
@@ -91,6 +112,7 @@ export class ProjectsService {
     console.log('[SEARCH DEBUG] Received filters:', filters);
     
     const qb = this.projectRepo.createQueryBuilder('p');
+    qb.where('p.status = :status', { status: ProjectStatus.APPROVED });
     if (filters.city) qb.andWhere('p.city LIKE :city', { city: `%${filters.city}%` });
     if (filters.location) qb.andWhere('p.location LIKE :location', { location: `%${filters.location}%` });
     // Handle property type filter - only apply if it's not empty
@@ -122,6 +144,13 @@ export class ProjectsService {
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) throw new NotFoundException('Project not found');
     Object.assign(project, dto);
+    return this.projectRepo.save(project);
+  }
+
+  async setStatus(id: number, status: 'approved'|'rejected'|'pending') {
+    const project = await this.projectRepo.findOneBy({ id });
+    if (!project) throw new NotFoundException('Project not found');
+    project.status = status as ProjectStatus;
     return this.projectRepo.save(project);
   }
 
