@@ -147,6 +147,51 @@ export class ProjectsService {
     return this.projectRepo.save(project);
   }
 
+  async updateWithUploads(id: number, dto: UpdateProjectDto, localFiles: any[]) {
+    const project = await this.projectRepo.findOneBy({ id });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const images = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('image/'));
+    const videos = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('video/'));
+
+    const [imageResults, videoResults] = await Promise.all([
+      Promise.all(
+        images.map((f: any) =>
+          this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+            folder: 'homeon/projects/images',
+            resource_type: 'image',
+          }),
+        ),
+      ),
+      Promise.all(
+        videos.map((f: any) =>
+          this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+            folder: 'homeon/projects/videos',
+            resource_type: 'video',
+          }),
+        ),
+      ),
+    ]);
+
+    // Merge arrays: keep provided existing names from dto, append new uploads
+    const nextImages = [
+      ...((dto.projectImages as any) || project.projectImages || []),
+      ...imageResults.map((r) => r.secure_url),
+    ].filter(Boolean);
+    const nextVideos = [
+      ...((dto.projectVideos as any) || project.projectVideos || []),
+      ...videoResults.map((r) => r.secure_url),
+    ].filter(Boolean);
+
+    Object.assign(project, {
+      ...dto,
+      projectImages: nextImages,
+      projectVideos: nextVideos,
+    });
+
+    return this.projectRepo.save(project);
+  }
+
   async setStatus(id: number, status: 'approved'|'rejected'|'pending') {
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) throw new NotFoundException('Project not found');
