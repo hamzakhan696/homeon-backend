@@ -1,4 +1,5 @@
 import { IsString, IsEmail, IsOptional, IsNumber, IsDateString, IsIn } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBookingDto {
@@ -121,9 +122,36 @@ export class CreateBookingDto {
   @IsString()
   nomineeOccupation?: string;
 
+  // CNIC images (Cloudinary URLs will be stored; for multipart, these are optional strings)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  applicantCnicFrontUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  applicantCnicBackUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nomineeCnicFrontUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nomineeCnicBackUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  applicantPhotoUrl?: string;
+
   // Project information
   @ApiProperty()
   @IsNumber()
+  @Type(() => Number)
   projectId: number;
 
   @ApiProperty()
@@ -143,6 +171,7 @@ export class CreateBookingDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   price?: number;
 
   @ApiPropertyOptional()

@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectsModule } from './projects/projects.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { MeetingsModule } from './meetings/meetings.module';
+import { ContactModule } from './contact/contact.module';
 import { EmailModule } from './email/email.module';
 
 @Module({
@@ -26,6 +28,8 @@ import { EmailModule } from './email/email.module';
     ProjectsModule,
     BlogsModule,
     BookingsModule,
+    MeetingsModule,
+    ContactModule,
     EmailModule,
   ],
   controllers: [AppController],

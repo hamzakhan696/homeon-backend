@@ -77,6 +77,22 @@ export class Booking {
   @Column({ nullable: true })
   nomineeOccupation: string;
 
+  // CNIC images (URLs)
+  @Column({ nullable: true })
+  applicantCnicFrontUrl: string;
+
+  @Column({ nullable: true })
+  applicantCnicBackUrl: string;
+
+  @Column({ nullable: true })
+  nomineeCnicFrontUrl: string;
+
+  @Column({ nullable: true })
+  nomineeCnicBackUrl: string;
+
+  @Column({ nullable: true })
+  applicantPhotoUrl: string;
+
   // Project snapshot
   @Column()
   projectId: number;
