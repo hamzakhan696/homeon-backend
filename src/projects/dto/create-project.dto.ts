@@ -157,6 +157,36 @@ export class CreateProjectDto {
   availableOnInstallments?: boolean;
 
   @ApiProperty({
+    description: 'Advance amount required for installment purchase',
+    example: 500000,
+    required: false
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  advanceAmount?: number;
+
+  @ApiProperty({
+    description: 'Number of installments',
+    example: 24,
+    required: false
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  numberOfInstallments?: number;
+
+  @ApiProperty({
+    description: 'Monthly installment amount',
+    example: 50000,
+    required: false
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  monthlyInstallment?: number;
+
+  @ApiProperty({
     description: 'Whether property is ready for possession',
     example: true,
     required: false

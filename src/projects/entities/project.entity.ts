@@ -110,6 +110,15 @@ export class Project {
   @Column({ default: false })
   availableOnInstallments: boolean;
 
+  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  advanceAmount: number | null;
+
+  @Column('int', { nullable: true })
+  numberOfInstallments: number | null;
+
+  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  monthlyInstallment: number | null;
+
   @Column({ default: false })
   readyForPossession: boolean;
 
