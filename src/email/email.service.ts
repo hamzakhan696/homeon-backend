@@ -3,6 +3,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Meeting } from '../meetings/entities/meeting.entity';
+import { Project } from '../projects/entities/project.entity';
 import { Contact } from '../contact/entities/contact.entity';
 
 @Injectable()
@@ -353,5 +354,54 @@ export class EmailService {
       </body>
       </html>
     `;
+  }
+
+  async sendProjectSubmissionEmail(project: Project): Promise<void> {
+    const to = this.configService.get('PROJECTS_APPROVAL_EMAIL_TO', 'bookingsapproval@homeon.pk');
+    const subject = `New Project Submitted for Approval - ${project.title}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Project Submission</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #63b330; color: white; padding: 16px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+          .row { display: grid; grid-template-columns: 160px 1fr; row-gap: 10px; }
+          .label { font-weight: 600; color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>New Project Submitted</h2>
+            <p>Please review and approve in the admin panel.</p>
+          </div>
+          <div class="content">
+            <div class="row">
+              <div class="label">Title</div><div>${project.title}</div>
+              <div class="label">Purpose</div><div>${project.purpose}</div>
+              <div class="label">Type</div><div>${project.propertyType} / ${project.propertySubtype}</div>
+              <div class="label">City</div><div>${project.city}</div>
+              <div class="label">Location</div><div>${project.location}</div>
+              <div class="label">Area</div><div>${project.areaSize} ${project.areaUnit}</div>
+              <div class="label">Price</div><div>${project.currency} ${project.price}</div>
+              <div class="label">Installments</div><div>${project.availableOnInstallments ? 'Available' : 'No'}</div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    try {
+      await this.mailerService.sendMail({ to, subject, html });
+      console.log(`[EMAIL SENT] Project submission email sent to ${to} for project #${project.id}`);
+    } catch (e) {
+      console.error('[EMAIL ERROR] Failed to send project submission email:', e);
+    }
   }
 }

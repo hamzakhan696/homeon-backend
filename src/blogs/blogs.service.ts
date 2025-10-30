@@ -77,6 +77,47 @@ export class BlogsService {
     return this.blogRepo.save(blog);
   }
 
+  async updateWithUploads(id: number, dto: UpdateBlogDto, localFiles: any[]) {
+    const blog = await this.blogRepo.findOneBy({ id });
+    if (!blog) throw new NotFoundException('Blog not found');
+
+    const files = (localFiles || []).filter((f: any) => f.mimetype?.startsWith('image/'));
+    let featuredImage = blog.featuredImage || null;
+    let images = Array.isArray(blog.images) ? [...blog.images] : [];
+
+    if (files.length > 0) {
+      const uploads = await Promise.all(
+        files.map((f: any) =>
+          this.cloudinary.uploadBuffer(Buffer.from(f.buffer), {
+            folder: 'homeon/blogs/images',
+            resource_type: 'image',
+          }),
+        ),
+      );
+      const urls = uploads.map((u) => u.secure_url);
+
+      // If client provided a new featured image (first file), use it
+      if (urls[0]) featuredImage = urls[0];
+
+      // For edit flow, when user uploads new gallery images, replace the gallery
+      // with the new selection (excluding the first which is featured),
+      // to mirror the project editor behaviour.
+      if (urls.length > 1) {
+        images = urls.slice(1);
+      }
+    }
+
+    const updateData = {
+      ...dto,
+      descriptions: dto.descriptions || (dto.description ? [dto.description] : blog.descriptions),
+      featuredImage,
+      images: images.length ? images : null,
+    } as Partial<Blog>;
+
+    Object.assign(blog, updateData);
+    return this.blogRepo.save(blog);
+  }
+
   async remove(id: number) {
     const blog = await this.blogRepo.findOneBy({ id });
     if (!blog) throw new NotFoundException('Blog not found');

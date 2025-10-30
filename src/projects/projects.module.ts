@@ -5,9 +5,10 @@ import { ProjectsController, PublicProjectsController } from './projects.control
 import { ProjectsService } from './projects.service';
 import { Project } from './entities/project.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Project]), CloudinaryModule],
+  imports: [TypeOrmModule.forFeature([Project]), CloudinaryModule, EmailModule],
   controllers: [ProjectsController, PublicProjectsController],
   providers: [ProjectsService],
 })

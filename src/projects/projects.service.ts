@@ -7,6 +7,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Buffer } from 'buffer';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ProjectsService {
@@ -14,11 +15,15 @@ export class ProjectsService {
     @InjectRepository(Project)
     private projectRepo: Repository<Project>,
     private readonly cloudinary: CloudinaryService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(dto: CreateProjectDto) {
     const project = this.projectRepo.create(dto);
-    return this.projectRepo.save(project);
+    const saved = await this.projectRepo.save(project);
+    // Fire-and-forget email to approvers
+    try { await this.emailService.sendProjectSubmissionEmail(saved as any); } catch {}
+    return saved;
   }
 
   async createWithUploads(dto: CreateProjectDto, localFiles: any[]) {
@@ -56,7 +61,9 @@ export class ProjectsService {
       ],
     });
 
-    return this.projectRepo.save(project);
+    const saved = await this.projectRepo.save(project);
+    try { await this.emailService.sendProjectSubmissionEmail(saved as any); } catch {}
+    return saved;
   }
 
   private normalizeMediaArray(input: string[] | null | undefined): string[] | null {
@@ -103,6 +110,7 @@ export class ProjectsService {
     city?: string;
     location?: string;
     propertyType?: string;
+    purpose?: string;
     bedrooms?: string;
     minPrice?: number;
     maxPrice?: number;
@@ -117,7 +125,10 @@ export class ProjectsService {
     if (filters.location) qb.andWhere('p.location LIKE :location', { location: `%${filters.location}%` });
     // Handle property type filter - only apply if it's not empty
     if (filters.propertyType && filters.propertyType.trim()) {
-      qb.andWhere('p.propertyType = :ptype', { ptype: filters.propertyType.trim() });
+      qb.andWhere('LOWER(p.propertyType) = LOWER(:ptype)', { ptype: filters.propertyType.trim() });
+    }
+    if (filters.purpose && filters.purpose.trim()) {
+      qb.andWhere('LOWER(p.purpose) = LOWER(:purpose)', { purpose: filters.purpose.trim() });
     }
     if (filters.bedrooms && filters.bedrooms !== 'All') qb.andWhere('p.bedrooms = :bed', { bed: String(filters.bedrooms) });
     if (typeof filters.minPrice === 'number') qb.andWhere('p.price >= :minPrice', { minPrice: filters.minPrice });

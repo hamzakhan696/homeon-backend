@@ -11,10 +11,15 @@ import { EmailService } from './email.service';
         transport: {
           host: configService.get('SMTP_HOST', 'smtp.gmail.com'),
           port: configService.get('SMTP_PORT', 587),
-          secure: false,
+          secure: String(configService.get('SMTP_SECURE', 'false')).toLowerCase() === 'true',
+          ignoreTLS: String(configService.get('SMTP_IGNORE_TLS', 'false')).toLowerCase() === 'true',
           auth: {
             user: configService.get('SMTP_USER'),
             pass: configService.get('SMTP_PASS'),
+          },
+          tls: {
+            // Fix self-signed certificate error when using certain SMTP providers
+            rejectUnauthorized: String(configService.get('SMTP_TLS_REJECT_UNAUTHORIZED', 'false')).toLowerCase() === 'true',
           },
         },
         defaults: {

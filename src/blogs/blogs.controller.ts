@@ -45,6 +45,21 @@ export class BlogsController {
     return this.service.update(+id, dto);
   }
 
+  @Put(':id/update-with-media')
+  @ApiOperation({ summary: 'Update blog with media uploads (multipart/form-data)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('files', 20, {
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (allowed.includes(file.mimetype)) cb(null, true);
+      else cb(null, false);
+    },
+  }))
+  updateWithMedia(@Param('id') id: string, @Body() dto: UpdateBlogDto, @UploadedFiles() files: any[]) {
+    return this.service.updateWithUploads(+id, dto, files);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(+id);

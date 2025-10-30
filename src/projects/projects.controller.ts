@@ -195,6 +195,7 @@ export class ProjectsController {
     return this.service.search({
       city: filters.city,
       location: filters.location,
+      purpose: filters.purpose,
       propertyType: filters.propertyType,
       bedrooms: filters.bedrooms,
       minPrice: typeof filters.minPrice === 'number' ? filters.minPrice : undefined,
